@@ -31,18 +31,21 @@ export default function MainFeature({ onStatsUpdate }) {
     { id: 'high', name: 'High', color: 'text-red-600' }
   ]
 
+  // Load tasks from localStorage on component mount
   useEffect(() => {
     const savedTasks = localStorage.getItem('taskflow-tasks')
     if (savedTasks) {
       const parsed = JSON.parse(savedTasks)
       setTasks(parsed)
-      onStatsUpdate(parsed)
     }
-  }, [onStatsUpdate])
+  }, [])
 
+  // Save tasks to localStorage and update stats when tasks change
   useEffect(() => {
     localStorage.setItem('taskflow-tasks', JSON.stringify(tasks))
-    onStatsUpdate(tasks)
+    if (onStatsUpdate) {
+      onStatsUpdate(tasks)
+    }
   }, [tasks, onStatsUpdate])
 
   const handleSubmit = (e) => {

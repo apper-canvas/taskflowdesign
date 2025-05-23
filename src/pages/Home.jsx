@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import MainFeature from '../components/MainFeature'
 import ApperIcon from '../components/ApperIcon'
@@ -13,7 +13,7 @@ export default function Home() {
 
   useEffect(() => {
     // Load dark mode preference
-    const isDark = localStorage.getItem('darkMode') === 'true'
+  const handleStatsUpdate = useCallback((tasks) => {
     setDarkMode(isDark)
     if (isDark) {
       document.documentElement.classList.add('dark')
@@ -25,7 +25,7 @@ export default function Home() {
     setDarkMode(newDarkMode)
     localStorage.setItem('darkMode', newDarkMode.toString())
     if (newDarkMode) {
-      document.documentElement.classList.add('dark')
+  }, [])
     } else {
       document.documentElement.classList.remove('dark')
     }
