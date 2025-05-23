@@ -38,13 +38,6 @@ export default function Home() {
     if (isDark) {
       document.documentElement.classList.add('dark')
     }
-  }, [])
-
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode
-    setDarkMode(newDarkMode)
-    localStorage.setItem('darkMode', newDarkMode.toString())
-    if (newDarkMode) {
     } else {
       document.documentElement.classList.remove('dark')
     }
@@ -56,7 +49,7 @@ export default function Home() {
     const pendingTasks = totalTasks - completedTasks
     
     setStats({ totalTasks, completedTasks, pendingTasks })
-  }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface-50 via-primary/5 to-secondary/5 dark:from-surface-900 dark:via-surface-800 dark:to-surface-700 transition-all duration-300">
