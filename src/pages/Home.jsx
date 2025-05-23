@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import MainFeature from '../components/MainFeature'
 import ApperIcon from '../components/ApperIcon'
 
@@ -7,6 +8,7 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState(false)
   const [stats, setStats] = useState({
     totalTasks: 0,
+  const navigate = useNavigate()
     completedTasks: 0,
     pendingTasks: 0
   })
@@ -64,6 +66,16 @@ export default function Home() {
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                   TaskFlow
                 </h1>
+            
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/calendar')}
+              className="flex items-center gap-2 px-4 py-2 bg-secondary/10 text-secondary rounded-xl hover:bg-secondary/20 transition-all duration-200"
+            >
+              <ApperIcon name="Calendar" className="w-5 h-5" />
+              Calendar
+            </motion.button>
                 <p className="text-sm sm:text-base text-surface-600 dark:text-surface-400">
                   Organize • Track • Achieve
                 </p>

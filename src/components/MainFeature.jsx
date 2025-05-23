@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-toastify'
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns'
+import { useLocation } from 'react-router-dom'
 import ApperIcon from './ApperIcon'
 
 export default function MainFeature({ onStatsUpdate }) {
@@ -17,6 +18,7 @@ export default function MainFeature({ onStatsUpdate }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
+  const location = useLocation()
 
   const categories = [
     { id: 'personal', name: 'Personal', color: 'bg-blue-500' },
@@ -47,6 +49,22 @@ export default function MainFeature({ onStatsUpdate }) {
       onStatsUpdate(tasks)
     }
   }, [tasks, onStatsUpdate])
+
+  // Handle task editing from calendar navigation
+  useEffect(() => {
+    if (location.state?.editTask) {
+      const taskToEdit = location.state.editTask
+      setNewTask({
+        title: taskToEdit.title,
+        description: taskToEdit.description,
+        priority: taskToEdit.priority,
+        dueDate: taskToEdit.dueDate,
+        category: taskToEdit.category
+      })
+      setEditingTask(taskToEdit)
+      setShowForm(true)
+    }
+  }, [location.state])
 
   const handleSubmit = (e) => {
     e.preventDefault()

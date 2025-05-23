@@ -3,6 +3,7 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import Home from './pages/Home'
 import NotFound from './pages/NotFound'
+import CalendarView from './pages/CalendarView'
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="*" element={<NotFound />} />
+        <Route path="/calendar" element={<CalendarView />} />
       </Routes>
       <ToastContainer
         position="top-right"
