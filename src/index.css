@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-surface-50 text-surface-900 antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Custom gradient backgrounds */
+.gradient-bg {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.task-gradient {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+/* Custom animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Neumorphism styles */
+.neu-light {
+  background: #f0f0f0;
+  box-shadow: 8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff;
+}
+
+.neu-inset {
+  background: #f0f0f0;
+  box-shadow: inset 8px 8px 16px #d1d9e6, inset -8px -8px 16px #ffffff;
+}
+
+/* Custom scrollbar for task lists */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-surface-100 rounded-full;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-primary/50 rounded-full hover:bg-primary/70;
+}
+
+/* Priority indicators */
+.priority-high {
+  @apply border-l-4 border-red-500 bg-red-50;
+}
+
+.priority-medium {
+  @apply border-l-4 border-yellow-500 bg-yellow-50;
+}
+
+.priority-low {
+  @apply border-l-4 border-green-500 bg-green-50;
+}
+
+/* Responsive text sizes */
+@screen sm {
+  .responsive-text {
+    @apply text-base;
+  }
+}
+
+@screen md {
+  .responsive-text {
+    @apply text-lg;
+  }
+}
+
+@screen lg {
+  .responsive-text {
+    @apply text-xl;
+  }
+}
