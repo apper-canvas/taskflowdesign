@@ -35,21 +35,12 @@ export default function Home() {
     const newDarkMode = !darkMode
     setDarkMode(newDarkMode)
     localStorage.setItem('darkMode', newDarkMode.toString())
-    if (isDark) {
+    if (newDarkMode) {
       document.documentElement.classList.add('dark')
-    }
     } else {
       document.documentElement.classList.remove('dark')
     }
   }
-
-  const updateStats = (tasks) => {
-    const totalTasks = tasks.length
-    const completedTasks = tasks.filter(task => task.isCompleted).length
-    const pendingTasks = totalTasks - completedTasks
-    
-    setStats({ totalTasks, completedTasks, pendingTasks })
-  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface-50 via-primary/5 to-secondary/5 dark:from-surface-900 dark:via-surface-800 dark:to-surface-700 transition-all duration-300">
