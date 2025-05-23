@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import MainFeature from '../components/MainFeature'
 import ApperIcon from '../components/ApperIcon'
@@ -13,8 +13,28 @@ export default function Home() {
 
   useEffect(() => {
     // Load dark mode preference
+    const savedDarkMode = localStorage.getItem('darkMode')
+    if (savedDarkMode) {
+      const isDark = savedDarkMode === 'true'
+      setDarkMode(isDark)
+      if (isDark) {
+        document.documentElement.classList.add('dark')
+      }
+    }
+  }, [])
+
   const handleStatsUpdate = useCallback((tasks) => {
-    setDarkMode(isDark)
+    const totalTasks = tasks.length
+    const completedTasks = tasks.filter(task => task.isCompleted).length
+    const pendingTasks = totalTasks - completedTasks
+    
+    setStats({ totalTasks, completedTasks, pendingTasks })
+  }, [])
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !darkMode
+    setDarkMode(newDarkMode)
+    localStorage.setItem('darkMode', newDarkMode.toString())
     if (isDark) {
       document.documentElement.classList.add('dark')
     }
@@ -25,7 +45,6 @@ export default function Home() {
     setDarkMode(newDarkMode)
     localStorage.setItem('darkMode', newDarkMode.toString())
     if (newDarkMode) {
-  }, [])
     } else {
       document.documentElement.classList.remove('dark')
     }
@@ -141,7 +160,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <MainFeature onStatsUpdate={updateStats} />
+          <MainFeature onStatsUpdate={handleStatsUpdate} />
         </motion.div>
       </main>
 
