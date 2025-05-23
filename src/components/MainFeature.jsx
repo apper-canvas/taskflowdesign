@@ -169,13 +169,13 @@ export default function MainFeature({ onStatsUpdate }) {
       description: '',
       priority: 'medium',
       dueDate: '',
-      category: 'personal'
-    })
       category: 'personal',
       isRecurring: false,
       recurringPattern: 'daily',
       recurringStartDate: '',
       recurringEndDate: ''
+    })
+    setShowForm(false)
   }
 
   const toggleTask = (id) => {
@@ -318,12 +318,12 @@ export default function MainFeature({ onStatsUpdate }) {
                 title: '',
                 description: '',
                 priority: 'medium',
+                dueDate: '',
                 category: 'personal',
                 isRecurring: false,
                 recurringPattern: 'daily',
                 recurringStartDate: '',
                 recurringEndDate: ''
-                category: 'personal'
               })
             }}
             className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary text-white px-6 py-3 rounded-xl font-medium shadow-soft hover:shadow-lg transition-all duration-200"
@@ -483,16 +483,17 @@ export default function MainFeature({ onStatsUpdate }) {
 
                   {!newTask.isRecurring && (
                     <div>
-                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                      Due Date
-                    </label>
-                    <input
-                      type="date"
-                      value={newTask.dueDate}
-                      onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
-                      className="w-full px-4 py-3 bg-surface-100 dark:bg-surface-700 rounded-xl border-0 focus:ring-2 focus:ring-primary/50 transition-all duration-200"
-                    />
-                  </div>
+                      <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        value={newTask.dueDate}
+                        onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
+                        className="w-full px-4 py-3 bg-surface-100 dark:bg-surface-700 rounded-xl border-0 focus:ring-2 focus:ring-primary/50 transition-all duration-200"
+                      />
+                    </div>
+                  )}
 
                   <button
                     type="submit"
@@ -501,8 +502,7 @@ export default function MainFeature({ onStatsUpdate }) {
                     {editingTask ? 'Update Task' : 'Create Task'}
                   </button>
                 </form>
-                    </div>
-                  )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -516,45 +516,6 @@ export default function MainFeature({ onStatsUpdate }) {
               </h3>
             </div>
             
-        {/* Recurring Tasks Management */}
-        {getRecurringSeries().length > 0 && (
-          <div className="xl:col-span-3 mb-6">
-            <div className="bg-white/80 dark:bg-surface-800/80 backdrop-blur-sm rounded-2xl shadow-card border border-white/20 p-6">
-              <h3 className="text-xl font-semibold text-surface-900 dark:text-white mb-4">
-                Recurring Task Series
-              </h3>
-              <div className="grid gap-3">
-                {getRecurringSeries().map(task => (
-                  <div key={task?.recurringParentId} className="flex items-center justify-between p-4 bg-surface-50 dark:bg-surface-700/50 rounded-xl">
-                    <div>
-                      <h4 className="font-medium text-surface-900 dark:text-white">
-                        {task?.title?.replace(/ \(#\d+\)$/, '')}
-                      </h4>
-                      <p className="text-sm text-surface-600 dark:text-surface-400">
-                        {task?.recurringPattern} • {tasks.filter(t => t.recurringParentId === task?.recurringParentId).length} tasks
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => editTask(task)}
-                        className="p-2 text-surface-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-all duration-200"
-                      >
-                        <ApperIcon name="Edit2" className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => disableRecurringSeries(task?.recurringParentId)}
-                        className="p-2 text-surface-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200"
-                      >
-                        <ApperIcon name="X" className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
             <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
               <AnimatePresence>
                 {filteredTasks.length === 0 ? (
@@ -666,6 +627,45 @@ export default function MainFeature({ onStatsUpdate }) {
           </div>
         </div>
       </div>
+
+        {/* Recurring Tasks Management */}
+        {getRecurringSeries().length > 0 && (
+          <div className="mt-6">
+            <div className="bg-white/80 dark:bg-surface-800/80 backdrop-blur-sm rounded-2xl shadow-card border border-white/20 p-6">
+              <h3 className="text-xl font-semibold text-surface-900 dark:text-white mb-4">
+                Recurring Task Series
+              </h3>
+              <div className="grid gap-3">
+                {getRecurringSeries().map(task => (
+                  <div key={task?.recurringParentId} className="flex items-center justify-between p-4 bg-surface-50 dark:bg-surface-700/50 rounded-xl">
+                    <div>
+                      <h4 className="font-medium text-surface-900 dark:text-white">
+                        {task?.title?.replace(/ \(#\d+\)$/, '')}
+                      </h4>
+                      <p className="text-sm text-surface-600 dark:text-surface-400">
+                        {task?.recurringPattern} • {tasks.filter(t => t.recurringParentId === task?.recurringParentId).length} tasks
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => editTask(task)}
+                        className="p-2 text-surface-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-all duration-200"
+                      >
+                        <ApperIcon name="Edit2" className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => disableRecurringSeries(task?.recurringParentId)}
+                        className="p-2 text-surface-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200"
+                      >
+                        <ApperIcon name="X" className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   )
 }
