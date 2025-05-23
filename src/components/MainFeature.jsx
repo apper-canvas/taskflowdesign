@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-toastify'
-import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns'
+import { format, isToday, isTomorrow, isPast, parseISO, addDays, addWeeks, addMonths, isAfter, isBefore } from 'date-fns'
 import { useLocation } from 'react-router-dom'
 import ApperIcon from './ApperIcon'
 
@@ -12,7 +12,11 @@ export default function MainFeature({ onStatsUpdate }) {
     description: '',
     priority: 'medium',
     dueDate: '',
-    category: 'personal'
+    category: 'personal',
+    isRecurring: false,
+    recurringPattern: 'daily',
+    recurringStartDate: '',
+    recurringEndDate: ''
   })
   const [filter, setFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
@@ -59,18 +63,79 @@ export default function MainFeature({ onStatsUpdate }) {
         description: taskToEdit.description,
         priority: taskToEdit.priority,
         dueDate: taskToEdit.dueDate,
-        category: taskToEdit.category
+        category: taskToEdit.category,
+        isRecurring: taskToEdit.isRecurring || false,
+        recurringPattern: taskToEdit.recurringPattern || 'daily',
+        recurringStartDate: taskToEdit.recurringStartDate || '',
+        recurringEndDate: taskToEdit.recurringEndDate || ''
       })
       setEditingTask(taskToEdit)
       setShowForm(true)
     }
   }, [location.state])
 
+  const generateRecurringTasks = (baseTask) => {
+    if (!baseTask.isRecurring || !baseTask.recurringStartDate || !baseTask.recurringEndDate) {
+      return [baseTask]
+    }
+
+    const generatedTasks = []
+    const startDate = parseISO(baseTask.recurringStartDate)
+    const endDate = parseISO(baseTask.recurringEndDate)
+    let currentDate = startDate
+    let taskIndex = 0
+
+    while (isBefore(currentDate, endDate) || format(currentDate, 'yyyy-MM-dd') === format(endDate, 'yyyy-MM-dd')) {
+      const taskId = `${baseTask.id || Date.now()}-${taskIndex}`
+      const recurringTask = {
+        ...baseTask,
+        id: taskId,
+        dueDate: format(currentDate, 'yyyy-MM-dd'),
+        title: `${baseTask.title}${taskIndex > 0 ? ` (#${taskIndex + 1})` : ''}`,
+        recurringParentId: baseTask.id || Date.now().toString(),
+        recurringIndex: taskIndex,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      
+      generatedTasks.push(recurringTask)
+      
+      // Calculate next occurrence
+      switch (baseTask.recurringPattern) {
+        case 'daily':
+          currentDate = addDays(currentDate, 1)
+          break
+        case 'weekly':
+          currentDate = addWeeks(currentDate, 1)
+          break
+        case 'monthly':
+          currentDate = addMonths(currentDate, 1)
+          break
+        default:
+          currentDate = addDays(currentDate, 1)
+      }
+      taskIndex++
+    }
+
+    return generatedTasks
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!newTask.title.trim()) {
       toast.error('Please enter a task title')
       return
+    }
+
+    if (newTask.isRecurring) {
+      if (!newTask.recurringStartDate || !newTask.recurringEndDate) {
+        toast.error('Please specify start and end dates for recurring tasks')
+        return
+      }
+      if (isAfter(parseISO(newTask.recurringStartDate), parseISO(newTask.recurringEndDate))) {
+        toast.error('End date must be after start date')
+        return
+      }
     }
 
     if (editingTask) {
@@ -82,16 +147,21 @@ export default function MainFeature({ onStatsUpdate }) {
       toast.success('Task updated successfully!')
       setEditingTask(null)
     } else {
-      const task = {
+      const baseTask = {
         id: Date.now().toString(),
         ...newTask,
         isCompleted: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
         tags: []
       }
-      setTasks([...tasks, task])
-      toast.success('Task created successfully!')
+      
+      const generatedTasks = generateRecurringTasks(baseTask)
+      setTasks([...tasks, ...generatedTasks])
+      
+      if (newTask.isRecurring) {
+        toast.success(`Recurring task created! Generated ${generatedTasks.length} instances.`)
+      } else {
+        toast.success('Task created successfully!')
+      }
     }
 
     setNewTask({
@@ -101,7 +171,11 @@ export default function MainFeature({ onStatsUpdate }) {
       dueDate: '',
       category: 'personal'
     })
-    setShowForm(false)
+      category: 'personal',
+      isRecurring: false,
+      recurringPattern: 'daily',
+      recurringStartDate: '',
+      recurringEndDate: ''
   }
 
   const toggleTask = (id) => {
@@ -117,8 +191,29 @@ export default function MainFeature({ onStatsUpdate }) {
   }
 
   const deleteTask = (id) => {
-    setTasks(tasks.filter(task => task.id !== id))
-    toast.success('Task deleted successfully')
+    const taskToDelete = tasks.find(task => task.id === id)
+    
+    if (taskToDelete?.recurringParentId) {
+      const confirmDeleteSeries = window.confirm(
+        'This is part of a recurring series. Do you want to delete the entire series?'
+      )
+      
+      if (confirmDeleteSeries) {
+        setTasks(tasks.filter(task => task.recurringParentId !== taskToDelete.recurringParentId))
+        toast.success('Recurring task series deleted successfully')
+      } else {
+        setTasks(tasks.filter(task => task.id !== id))
+        toast.success('Task deleted successfully')
+      }
+    } else {
+      setTasks(tasks.filter(task => task.id !== id))
+      toast.success('Task deleted successfully')
+    }
+  }
+
+  const disableRecurringSeries = (parentId) => {
+    setTasks(tasks.filter(task => task.recurringParentId !== parentId))
+    toast.success('Future recurring tasks disabled')
   }
 
   const editTask = (task) => {
@@ -127,7 +222,11 @@ export default function MainFeature({ onStatsUpdate }) {
       description: task.description,
       priority: task.priority,
       dueDate: task.dueDate,
-      category: task.category
+      category: task.category,
+      isRecurring: task.isRecurring || false,
+      recurringPattern: task.recurringPattern || 'daily',
+      recurringStartDate: task.recurringStartDate || '',
+      recurringEndDate: task.recurringEndDate || ''
     })
     setEditingTask(task)
     setShowForm(true)
@@ -161,6 +260,17 @@ export default function MainFeature({ onStatsUpdate }) {
     
     return matchesFilter && matchesSearch
   })
+
+  const recurringPatterns = [
+    { id: 'daily', name: 'Daily' },
+    { id: 'weekly', name: 'Weekly' },
+    { id: 'monthly', name: 'Monthly' }
+  ]
+
+  const getRecurringSeries = () => {
+    const parentIds = [...new Set(tasks.filter(task => task.recurringParentId).map(task => task.recurringParentId))]
+    return parentIds.map(parentId => tasks.find(task => task.recurringParentId === parentId))
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -208,7 +318,11 @@ export default function MainFeature({ onStatsUpdate }) {
                 title: '',
                 description: '',
                 priority: 'medium',
-                dueDate: '',
+                category: 'personal',
+                isRecurring: false,
+                recurringPattern: 'daily',
+                recurringStartDate: '',
+                recurringEndDate: ''
                 category: 'personal'
               })
             }}
@@ -299,6 +413,76 @@ export default function MainFeature({ onStatsUpdate }) {
                   </div>
 
                   <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <input
+                        type="checkbox"
+                        id="isRecurring"
+                        checked={newTask.isRecurring}
+                        onChange={(e) => setNewTask({...newTask, isRecurring: e.target.checked})}
+                        className="w-4 h-4 text-primary bg-surface-100 border-surface-300 rounded focus:ring-primary/50"
+                      />
+                      <label htmlFor="isRecurring" className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                        Recurring Task
+                      </label>
+                    </div>
+                  </div>
+
+                  <AnimatePresence>
+                    {newTask.isRecurring && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="space-y-4"
+                      >
+                        <div>
+                          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                            Repeat Pattern
+                          </label>
+                          <select
+                            value={newTask.recurringPattern}
+                            onChange={(e) => setNewTask({...newTask, recurringPattern: e.target.value})}
+                            className="w-full px-4 py-3 bg-surface-100 dark:bg-surface-700 rounded-xl border-0 focus:ring-2 focus:ring-primary/50 transition-all duration-200"
+                          >
+                            {recurringPatterns.map(pattern => (
+                              <option key={pattern.id} value={pattern.id}>
+                                {pattern.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                              Start Date
+                            </label>
+                            <input
+                              type="date"
+                              value={newTask.recurringStartDate}
+                              onChange={(e) => setNewTask({...newTask, recurringStartDate: e.target.value})}
+                              className="w-full px-4 py-3 bg-surface-100 dark:bg-surface-700 rounded-xl border-0 focus:ring-2 focus:ring-primary/50 transition-all duration-200"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                              End Date
+                            </label>
+                            <input
+                              type="date"
+                              value={newTask.recurringEndDate}
+                              onChange={(e) => setNewTask({...newTask, recurringEndDate: e.target.value})}
+                              className="w-full px-4 py-3 bg-surface-100 dark:bg-surface-700 rounded-xl border-0 focus:ring-2 focus:ring-primary/50 transition-all duration-200"
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {!newTask.isRecurring && (
+                    <div>
                     <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
                       Due Date
                     </label>
@@ -317,7 +501,8 @@ export default function MainFeature({ onStatsUpdate }) {
                     {editingTask ? 'Update Task' : 'Create Task'}
                   </button>
                 </form>
-              </div>
+                    </div>
+                  )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -331,6 +516,45 @@ export default function MainFeature({ onStatsUpdate }) {
               </h3>
             </div>
             
+        {/* Recurring Tasks Management */}
+        {getRecurringSeries().length > 0 && (
+          <div className="xl:col-span-3 mb-6">
+            <div className="bg-white/80 dark:bg-surface-800/80 backdrop-blur-sm rounded-2xl shadow-card border border-white/20 p-6">
+              <h3 className="text-xl font-semibold text-surface-900 dark:text-white mb-4">
+                Recurring Task Series
+              </h3>
+              <div className="grid gap-3">
+                {getRecurringSeries().map(task => (
+                  <div key={task?.recurringParentId} className="flex items-center justify-between p-4 bg-surface-50 dark:bg-surface-700/50 rounded-xl">
+                    <div>
+                      <h4 className="font-medium text-surface-900 dark:text-white">
+                        {task?.title?.replace(/ \(#\d+\)$/, '')}
+                      </h4>
+                      <p className="text-sm text-surface-600 dark:text-surface-400">
+                        {task?.recurringPattern} • {tasks.filter(t => t.recurringParentId === task?.recurringParentId).length} tasks
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => editTask(task)}
+                        className="p-2 text-surface-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-all duration-200"
+                      >
+                        <ApperIcon name="Edit2" className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => disableRecurringSeries(task?.recurringParentId)}
+                        className="p-2 text-surface-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200"
+                      >
+                        <ApperIcon name="X" className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
             <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
               <AnimatePresence>
                 {filteredTasks.length === 0 ? (
@@ -381,6 +605,12 @@ export default function MainFeature({ onStatsUpdate }) {
                               <h4 className={`font-medium text-surface-900 dark:text-white ${
                                 task.isCompleted ? 'line-through' : ''
                               }`}>
+                                {task.recurringParentId && (
+                                  <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-purple-100 text-purple-800 mr-2">
+                                    <ApperIcon name="Repeat" className="w-3 h-3 mr-1" />
+                                    Recurring
+                                  </span>
+                                )}
                                 {task.title}
                               </h4>
                               
